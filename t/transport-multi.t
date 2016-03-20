@@ -1,6 +1,5 @@
 use Test::Most;
 
-use DDP;
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::Test ;
 
