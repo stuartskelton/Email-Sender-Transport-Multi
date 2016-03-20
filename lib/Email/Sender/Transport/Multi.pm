@@ -3,6 +3,7 @@ use strict;
 use warnings;
 package Email::Sender::Transport::Multi;
 use Moo;
+use Class::Load;
 use MooX::HandlesVia;
 use Types::Standard -all;
 use Try::Tiny;
@@ -11,7 +12,7 @@ with ('Email::Sender::Transport');
 
 has transports => (
     is => 'ro',
-    isa => ArrayRef[Int],
+    isa => ArrayRef[ConsumerOf['Email::Sender::Transport']],
     default => sub{[]},
     handles_via => 'Array',
     handles => {
@@ -42,5 +43,30 @@ sub send_email {
     return $self->success;
 }
 
+
+sub new_from_config {
+    my $class = shift;
+    my $config = shift;
+    die "You must specify a config."
+        unless ($config);
+
+    die "You must specify an array of transports."
+        unless exists $config->{transports} &&
+            'ARRAY' eq ref($config->{transports});
+
+    my $object = {};
+
+    foreach my $tansport_class ( @{$config->{transports}} ) {
+        my $transport_classname = $tansport_class->{class};
+        die 'There was an empty transport class name in your config' unless $transport_classname;
+
+        Class::Load::load_class($transport_classname);
+        my $transport_config = delete $tansport_class->{cofig};
+        $transport_config //= {};
+        push @{$object->{transports}},
+            $tansport_class->{class}->new( %{$transport_config} )
+    }
+    return $class->new( $object );
+}
 
 1;
