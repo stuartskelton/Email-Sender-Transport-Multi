@@ -1,5 +1,6 @@
+use strict;
+use warnings;
 use Test::Most;
-
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::Test ;
 

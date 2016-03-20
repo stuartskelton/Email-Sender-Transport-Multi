@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 use Test::Most;
 
 use Email::Sender::Simple qw(sendmail);
@@ -78,3 +80,4 @@ foreach my $email (@emails){
 
 
 done_testing();
+
