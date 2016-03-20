@@ -20,6 +20,17 @@ for (1..4){
 
 my $multi_transport = Email::Sender::Transport::Multi->new();
 
+
+dies_ok(
+    sub {
+        sendmail(
+            $emails[0], { transport => $multi_transport }
+        )
+    },
+    'Should fail as there are no transports configured.'
+);
+
+
 # lets add some transports
 $multi_transport->add_transport(
    Email::Sender::Transport::Test->new(),

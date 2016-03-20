@@ -16,7 +16,8 @@ has transports => (
     default => sub{[]},
     handles_via => 'Array',
     handles => {
-        add_transport => 'push'
+        add_transport  => 'push',
+        num_transports => 'count',
     }
 );
 
@@ -29,7 +30,12 @@ has hard_fail => (
 
 sub send_email {
     my ($self,$email,$env) = @_;
+
+    Email::Sender::Failure->throw('No transports have been configured.')
+        if 0 == $self->num_transports;
+
     my @errors;
+
     # loop though the transports
     foreach my $transport(@{$self->transports}) {
         try {
