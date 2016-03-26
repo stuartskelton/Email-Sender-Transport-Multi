@@ -38,12 +38,14 @@ sub send_email {
 
     # loop though the transports
     foreach my $transport(@{$self->transports}) {
+        my $have_failed;
         try {
             $transport->send_email($email);
         } catch {
             push @errors, $_;
-            last if $self->hard_fail;
+            $have_failed = 1;
         };
+        last if ($have_failed && $self->hard_fail);
     }
     Email::Sender::Failure->throw(join("\n",@errors)) if @errors;
     return $self->success;
