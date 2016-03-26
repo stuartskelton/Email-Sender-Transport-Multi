@@ -61,7 +61,7 @@ sub new_from_config {
             'ARRAY' eq ref($config->{transports});
 
     my $object = {};
-
+    $object->{hard_fail} = $config->{hard_fail} if $config->{hard_fail};
     foreach my $tansport_class ( @{$config->{transports}} ) {
         my $transport_classname = $tansport_class->{class};
         die 'There was an empty transport class name in your config' unless $transport_classname;
