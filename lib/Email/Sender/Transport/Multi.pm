@@ -67,7 +67,7 @@ sub new_from_config {
         die 'There was an empty transport class name in your config' unless $transport_classname;
 
         Class::Load::load_class($transport_classname);
-        my $transport_config = delete $tansport_class->{cofig};
+        my $transport_config = delete $tansport_class->{config};
         $transport_config //= {};
         push @{$object->{transports}},
             $tansport_class->{class}->new( %{$transport_config} )
