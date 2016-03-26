@@ -14,7 +14,8 @@ use_ok('Email::Sender::Transport::Multi');
 
 # lets build some emails
 my @emails;
-for (1..4){
+my $total_number_of_emails = 4;
+for (1..$total_number_of_emails){
     push @emails, TestUtil::build_fake_email()
 };
 
@@ -23,12 +24,13 @@ my $config = {
         {class => 'Email::Sender::Transport::Test', config => {foo => 'meep'} },
         {class => 'Email::Sender::Transport::Test', config => {} },
         {class => 'Email::Sender::Transport::Test' },
-    ]
+    ],
 };
 
 
 my $multi_transport = Email::Sender::Transport::Multi->new_from_config($config);
 
+is($multi_transport->hard_fail,0,'hard_fail should default to 0');
 
 # send some emails
 foreach my $email (@emails){
@@ -57,28 +59,61 @@ is_deeply(
 );
 
 
-# now build a config wiht a failing transport
+subtest "Hard fails"  => sub {
 
-$config = {
-    transports => [
-        {class => 'Email::Sender::Transport::Test', config => {foo => 'meep'} },
-        {class => 'FailTransport' },
-    ]
+# now build a config wiht a failing transport
+for my $hard_fail (0,1) {
+
+    $config = {
+        transports => [
+            {class => 'Email::Sender::Transport::Test', config => {foo => 'meep'} },
+            {class => 'FailTransport' },
+            {class => 'Email::Sender::Transport::Test', config => {foo => 'meep'} },
+        ],
+        hard_fail => $hard_fail,
+    };
+
+    $multi_transport = Email::Sender::Transport::Multi->new_from_config($config);
+
+    is($multi_transport->hard_fail,$hard_fail,"Is hard_fail set to $hard_fail");
+
+    # send some emails
+    foreach my $email (@emails){
+        dies_ok( sub {
+                sendmail(
+                    $email, { transport => $multi_transport }
+                )
+            },
+            'Should throw an error as FailTransport was used'
+        );
+    }
+
+
+    is(
+        $multi_transport->transports->[0]->deliveries,
+        $total_number_of_emails,
+        "First transport should have sent $total_number_of_emails emails"
+    );
+
+    if ($multi_transport->hard_fail) {
+        is(
+            $multi_transport->transports->[2]->deliveries,
+            0,
+            "third transport should have sent 0 emails, because of the hard_fail"
+        );
+    }
+    else {
+        is(
+            $multi_transport->transports->[2]->deliveries,
+            $total_number_of_emails,
+            "Third transport should have sent $total_number_of_emails emails."
+        );
+    }
+}
+
 };
 
-$multi_transport = Email::Sender::Transport::Multi->new_from_config($config);
 
-
-# send some emails
-foreach my $email (@emails){
-    dies_ok( sub {
-            sendmail(
-                $email, { transport => $multi_transport }
-            )
-        },
-        'Should throw an error as FailTransport was used'
-    );
-}
 
 
 done_testing();
